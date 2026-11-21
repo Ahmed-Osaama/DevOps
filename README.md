@@ -16,7 +16,7 @@
 > 
 > 5- Nada Wael
 > 
-> 📎🎓 Instructor: Bakr Yousre
+> 📎🎓 Instructor: Mohamed Rahim
 > 
 > 🎯 Project Objectives:
 > 
