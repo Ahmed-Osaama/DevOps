@@ -1,0 +1,80 @@
+{
+  "name": "apnidukaan-ecommerce",
+  "version": "1.0.0",
+  "description": "Full-Stack E-Commerce Platform - ApniDukaan with microservices architecture",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend/*",
+    "backend/shared"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "dev:backend": "concurrently \"npm run dev --workspace=backend/catalog-service\" \"npm run dev --workspace=backend/user-service\" \"npm run dev --workspace=backend/order-service\" \"npm run dev --workspace=backend/payment-service\" \"npm run dev --workspace=backend/notification-service\" \"npm run dev --workspace=backend/api-gateway\"",
+    "dev:essential": "concurrently \"npm run dev --workspace=backend/catalog-service\" \"npm run dev --workspace=backend/api-gateway\"",
+    "build": "npm run build --workspaces",
+    "build:frontend": "npm run build --workspace=frontend",
+    "build:backend": "npm run build --workspaces --workspace=backend/*",
+    "test": "npm run test --workspaces",
+    "test:all": "npm test",
+    "test:frontend": "npm run test --workspace=frontend",
+    "test:backend": "npm run test --workspaces --workspace=backend/*",
+    "lint": "npm run lint --workspaces",
+    "format": "prettier --write .",
+    "type-check": "npm run type-check --workspaces",
+    "setup": "npm install && npm run setup --workspaces --if-present",
+    "clean": "npm run clean --workspaces && rm -rf node_modules",
+    "analyze": "npm run analyze --workspace=frontend",
+    "test:coverage": "npm run test:coverage --workspaces",
+    "test:watch": "npm run test:watch --workspaces"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.54.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-import": "^2.29.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.1.0",
+    "typescript": "^5.3.0"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/apnidukaan-ecommerce.git"
+  },
+  "keywords": [
+    "ecommerce",
+    "microservices",
+    "nextjs",
+    "nodejs",
+    "graphql",
+    "mongodb",
+    "redis",
+    "kafka",
+    "aws"
+  ],
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT",
+  "dependencies": {
+    "csv-parser": "^3.2.0",
+    "csv-writer": "^1.6.0",
+    "mongodb": "^6.20.0"
+  }
+}
