@@ -1,0 +1,25 @@
+// GraphQL mutations removed - using REST API instead
+export const LOGIN = null;
+export const REGISTER = null;
+export const LOGOUT = null;
+export const REFRESH_TOKEN = null;
+export const FORGOT_PASSWORD = null;
+export const RESET_PASSWORD = null;
+export const UPDATE_PROFILE = null;
+export const ADD_ADDRESS = null;
+export const UPDATE_ADDRESS = null;
+export const DELETE_ADDRESS = null;
+export const ADD_TO_CART = null;
+export const REMOVE_FROM_CART = null;
+export const UPDATE_CART_ITEM = null;
+export const ADD_TO_WISHLIST = null;
+export const REMOVE_FROM_WISHLIST = null;
+export const CREATE_ORDER = null;
+export const UPDATE_ORDER_STATUS = null;
+export const UPDATE_USER_ROLE = null;
+export const DELETE_USER = null;
+export const CREATE_PRODUCT = null;
+export const UPDATE_PRODUCT = null;
+export const DELETE_PRODUCT = null;
+export const VERIFY_EMAIL = null;
+export const CLEAR_CART = null;

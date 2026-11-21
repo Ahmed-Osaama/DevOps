@@ -1,0 +1,309 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import ProductCard from './ProductCard'
+import type { Product } from '../lib/api'
+import { productsApi, type ProductFilters, type ProductSort } from '../lib/api'
+
+export default function DealsOfTheDay({ products: propProducts }: { products?: Product[] }) {
+  const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 })
+  const [deals, setDeals] = useState<Product[]>([])
+  const [loading, setLoading] = useState(false)
+  const [dataSource, setDataSource] = useState<'database' | 'fallback' | 'props'>('props')
+
+  useEffect(() => {
+    const updateCountdown = () => {
+      const now = new Date()
+      const end = new Date()
+      end.setHours(23, 59, 59, 999)
+      const diff = Math.max(0, end.getTime() - now.getTime())
+      const hours = Math.floor(diff / (1000 * 60 * 60))
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+      setTimeLeft({ hours, minutes, seconds })
+    }
+    updateCountdown()
+    const timer = setInterval(updateCountdown, 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  useEffect(() => {
+    const fetchDeals = async () => {
+      if (propProducts && propProducts.length > 0) {
+        setDataSource('props')
+        setDeals(propProducts.slice(0, 4))
+        return
+      }
+
+      setLoading(true)
+      try {
+        // First, try to load the explicitly requested Deal-of-the-Day products by IDs
+        const preferredIdList = [
+          '68e36fa889364caaa980d085', // Xbox Series S
+          '68e36fa889364caaa980d0b4', // Pulse 3D Wireless Headset
+          '68e36fc589364caaa9818659', // Apple Watch Series 8
+          '68e36fc689364caaa9818913'  // Samsung Galaxy Watch 3
+        ]
+
+        const byIds = await productsApi.getByIds(preferredIdList)
+        const byIdsData: Product[] = Array.isArray(byIds?.data) ? byIds.data : []
+        if (byIdsData.length > 0) {
+          setDataSource('database')
+          // Keep the provided order and show exactly four
+          setDeals(byIdsData.slice(0, 4))
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('deals-ready'))
+          }
+          return
+        }
+
+        // Fallback: Prefer published, on-sale products
+        let products: Product[] = []
+        const desired = 8
+        // Fetch a larger published set and filter client-side for deals (isOnSale)
+        const sort: ProductSort = { field: 'price', order: 'asc' }
+        const res = await productsApi.getAll({ status: 'published' }, sort, 1, 32)
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+          products = res.data.filter(p => p.isOnSale)
+        }
+
+        if (products.length < 8) {
+          // Top-up from top-rated published (avoid duplicates)
+          const fallback = await productsApi.getAll({ status: 'published' }, { field: 'rating', order: 'desc' }, 1, 32)
+          const fallbackProducts: Product[] = (fallback?.data || []).filter(p => p.isOnSale)
+          const seen = new Set(products.map(p => p._id || p.slug))
+          for (const p of fallbackProducts) {
+            const key = p._id || p.slug
+            if (!key || !seen.has(key)) {
+              products.push(p)
+              if (key) seen.add(key)
+            }
+            if (products.length >= 8) break
+          }
+        }
+
+        if (products.length > 0) {
+          // Reorder to prioritize requested ASINs (matched via sku) as a secondary preference
+          const preferredSkus = new Set([
+            'B09N9XB5BC','B08GSBRR9Q','B0C121T53G','B089DQ33QW'
+          ].map(s => s.toLowerCase()))
+          products = products
+            .slice(0, desired * 2)
+            .sort((a, b) => {
+              const aPref = a.sku ? preferredSkus.has(String(a.sku).toLowerCase()) : false
+              const bPref = b.sku ? preferredSkus.has(String(b.sku).toLowerCase()) : false
+              if (aPref === bPref) return 0
+              return aPref ? -1 : 1
+            })
+            .slice(0, desired)
+          setDataSource('database')
+          setDeals(products)
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('deals-ready'))
+          }
+        } else {
+          setDataSource('fallback')
+          // Helper to generate slug
+          const toSlug = (s: string) => s.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/[\s-]+/g, '-').replace(/^-|-$/g, '')
+          // Helper to create a valid mock Product matching the schema
+          const createMock = (
+            id: string,
+            name: string,
+            price: number,
+            originalPrice: number,
+            image: string,
+            ratingAvg: number,
+            ratingCount: number,
+            qty: number,
+            lowStock: number
+          ): Product => ({
+            _id: id,
+            name,
+            slug: toSlug(name),
+            description: name,
+            shortDescription: name,
+            sku: `SKU-${id}`,
+            price,
+            originalPrice,
+            currency: 'USD',
+            images: [image],
+            thumbnailImage: image,
+            category: { _id: 'electronics', name: 'Electronics', slug: 'electronics' },
+            tags: [],
+            attributes: [],
+            inventory: {
+              quantity: qty,
+              lowStockThreshold: lowStock,
+              trackQuantity: true,
+              allowBackorder: false
+            },
+            rating: {
+              average: ratingAvg,
+              count: ratingCount
+            },
+            sales: { totalSold: 0, revenue: 0 },
+            isOnSale: originalPrice > price,
+            featured: true,
+            status: 'published',
+            visibility: 'public',
+            seo: { title: name, description: name, keywords: [] },
+            shipping: {
+              weight: 1,
+              dimensions: { length: 10, width: 10, height: 10 },
+              freeShipping: price > 50
+            },
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          })
+
+          // Fallback to premium deals
+          const mockDeals: Product[] = [
+            createMock(
+              'deal1',
+              'Anker PowerCore 20000mAh Power Bank',
+              29,
+              39,
+              'https://via.placeholder.com/300x300/1F2937/FFFFFF?text=Anker+PowerBank',
+              4.6,
+              1234,
+              100,
+              20
+            ),
+            createMock(
+              'deal2',
+              'Belkin 3-in-1 Wireless Charging Station',
+              79,
+              99,
+              'https://via.placeholder.com/300x300/3B82F6/FFFFFF?text=Belkin+Charger',
+              4.4,
+              567,
+              75,
+              15
+            ),
+            createMock(
+              'deal3',
+              'JBL Flip 6 Bluetooth Speaker',
+              89,
+              119,
+              'https://via.placeholder.com/300x300/EF4444/FFFFFF?text=JBL+Flip+6',
+              4.5,
+              2345,
+              60,
+              12
+            ),
+            createMock(
+              'deal4',
+              'Logitech MX Master 3S Wireless Mouse',
+              99,
+              129,
+              'https://via.placeholder.com/300x300/10B981/FFFFFF?text=Logitech+MX+Master',
+              4.7,
+              3456,
+              40,
+              8
+            ),
+            createMock(
+              'deal5',
+              'COSORI Pro LE 5-Qt Air Fryer',
+              79,
+              99,
+              'https://via.placeholder.com/300x300/F59E0B/FFFFFF?text=COSORI+Air+Fryer',
+              4.6,
+              12000,
+              80,
+              10
+            ),
+            createMock(
+              'deal6',
+              'Kasa Smart Plug Mini 4-Pack (EP10)',
+              24,
+              39,
+              'https://via.placeholder.com/300x300/3B82F6/FFFFFF?text=Kasa+Smart+Plug',
+              4.7,
+              50000,
+              200,
+              20
+            ),
+            createMock(
+              'deal7',
+              'Hydro Flask Wide Mouth Bottle (32 oz)',
+              39,
+              49,
+              'https://via.placeholder.com/300x300/0EA5E9/FFFFFF?text=Hydro+Flask',
+              4.8,
+              25000,
+              120,
+              12
+            ),
+            createMock(
+              'deal8',
+              'Kindle Paperwhite (8 GB, 2021)',
+              109,
+              129,
+              'https://via.placeholder.com/300x300/111827/FFFFFF?text=Kindle+Paperwhite',
+              4.8,
+              80000,
+              90,
+              10
+            )
+          ]
+          setDeals(mockDeals)
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('deals-ready'))
+          }
+        }
+      } catch (error) {
+        // Handle error silently
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDeals()
+  }, [propProducts])
+
+  if (loading) {
+    return (
+      <div>
+        <p className="text-center text-sm text-gray-600 mb-4">
+          We’re fetching today’s deals from our free MongoDB tier. It may take
+          up to about 1 minute to load data. Thanks for your patience!
+        </p>
+        <div className="flex justify-center items-center gap-3 mb-6 text-gray-700">
+          <span className="font-medium">Offer ends in:</span>
+          <span className="bg-red-500 text-white px-3 py-1 rounded-md font-semibold text-sm">
+            {String(timeLeft.hours).padStart(2, '0')}h {String(timeLeft.minutes).padStart(2, '0')}m {String(timeLeft.seconds).padStart(2, '0')}s
+          </span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, index) => (
+            <div key={index} className="bg-white rounded-lg shadow-md p-4 animate-pulse">
+              <div className="bg-gray-200 h-48 rounded-lg mb-4"></div>
+              <div className="bg-gray-200 h-4 rounded mb-2"></div>
+              <div className="bg-gray-200 h-4 rounded mb-2 w-3/4"></div>
+              <div className="bg-gray-200 h-6 rounded w-1/2"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <div className="flex justify-center items-center gap-3 mb-6 text-gray-700">
+        <span className="font-medium">Offer ends in:</span>
+        <span className="bg-red-500 text-white px-3 py-1 rounded-md font-semibold text-sm">
+          {String(timeLeft.hours).padStart(2, '0')}h {String(timeLeft.minutes).padStart(2, '0')}m {String(timeLeft.seconds).padStart(2, '0')}s
+        </span>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {deals.map((p, idx) => (
+          <ProductCard key={p._id || p.slug || idx} product={p} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+

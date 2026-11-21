@@ -1,0 +1,191 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Force light theme across the entire application */
+:root {
+  --color-scheme: light;
+  color-scheme: light;
+}
+
+html, html.light {
+  background-color: #f9fafb; /* gray-50 */
+  color: #111827; /* gray-900 */
+  color-scheme: light;
+}
+
+/* Dark theme styles */
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  background-color: #f9fafb; /* gray-50 */
+  color: #111827; /* gray-900 */
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Dark theme body styles */
+.dark body {
+  background-color: #111827; /* gray-900 */
+  color: #f9fafb; /* gray-50 */
+}
+
+/* Ensure all components use light theme colors */
+.light {
+  --tw-bg-opacity: 1;
+  --tw-text-opacity: 1;
+}
+
+/* Theme toggle visibility fixes */
+.theme-toggle {
+  @apply text-gray-600 dark:text-gray-400;
+}
+
+.theme-toggle:hover {
+  @apply text-gray-900 dark:text-white;
+}
+
+.theme-toggle svg {
+  @apply text-current;
+  stroke-width: 2;
+}
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: #f9fafb; /* Light gray background instead of dark gradient */
+}
+
+/* Smooth scrolling */
+html { scroll-behavior: smooth; }
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Force light mode by default */
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  /* Custom dropdown animations */
+  .animate-in {
+    animation: animate-in 0.2s ease-out;
+  }
+  
+  .slide-in-from-top-2 {
+    animation: slide-in-from-top-2 0.2s ease-out;
+  }
+  
+  @keyframes animate-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  @keyframes slide-in-from-top-2 {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Custom component styles */
+@layer components {
+  .btn-primary {
+    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .btn-secondary {
+    @apply bg-neutral-200 hover:bg-neutral-300 text-neutral-800 font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .input-field {
+    @apply w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 bg-white;
+  }
+  
+  /* Fix input text visibility */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="tel"],
+  input[type="number"],
+  textarea,
+  select {
+    @apply text-gray-900 bg-white;
+  }
+
+  /* Preserve gray background for navbar search input specifically */
+  .navbar-search input[type="text"] {
+    @apply bg-gray-100 !important;
+  }
+  
+  /* Dark mode input styles */
+  .dark input[type="text"],
+  .dark input[type="email"],
+  .dark input[type="password"],
+  .dark input[type="tel"],
+  .dark input[type="number"],
+  .dark textarea,
+  .dark select {
+    @apply text-gray-100 bg-gray-700;
+  }
+  
+  .card {
+    @apply bg-white rounded-lg shadow-md border border-neutral-200 p-6;
+  }
+}
+
+/* Remove green autofill background in Chrome/Safari and ensure black text */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important; /* force white background */
+  box-shadow: 0 0 0px 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #000000 !important; /* black text */
+  caret-color: #000000 !important;
+  transition: background-color 9999s ease-out 0s; /* prevent flicker */
+}
